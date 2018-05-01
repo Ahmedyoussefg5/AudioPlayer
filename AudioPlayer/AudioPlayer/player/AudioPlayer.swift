@@ -353,7 +353,7 @@ public class AudioPlayer: NSObject {
     // MARK: Utility methods
 
     /// Updates the MPNowPlayingInfoCenter with current item's info.
-    func updateNowPlayingInfoCenter() {
+    open func updateNowPlayingInfoCenter() {
         #if os(iOS) || os(tvOS)
             if let item = currentItem {
                 setRemoteControlCommandsEnabled(true)
