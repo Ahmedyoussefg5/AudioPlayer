@@ -8,49 +8,53 @@
 
 import AVFoundation
 #if os(iOS) || os(tvOS)
-    import MediaPlayer
+import MediaPlayer
 #endif
 
 /// An `AudioPlayer` instance is used to play `AudioPlayerItem`. It's an easy to use AVPlayer with simple methods to
 /// handle the whole playing audio process.
 ///
 /// You can get events (such as state change or time observation) by registering a delegate.
-public class AudioPlayer: NSObject {
+open class AudioPlayer: NSObject {
     // MARK: Handlers
-
+    
     /// The background handler.
     let backgroundHandler = BackgroundHandler()
-
+    
     /// Reachability for network connection.
     let reachability = Reachability()
-
+    
     // MARK: Event producers
-
+    
     /// The network event producer.
     lazy var networkEventProducer: NetworkEventProducer = {
         NetworkEventProducer(reachability: self.reachability)
     }()
-
+    
     /// The player event producer.
     let playerEventProducer = PlayerEventProducer()
-
+    
     /// The seek event producer.
     let seekEventProducer = SeekEventProducer()
-
+    
     /// The quality adjustment event producer.
     var qualityAdjustmentEventProducer = QualityAdjustmentEventProducer()
-
+    
     /// The audio item event producer.
     var audioItemEventProducer = AudioItemEventProducer()
-
+    
     /// The retry event producer.
     var retryEventProducer = RetryEventProducer()
-
+    
     // MARK: Player
-
+    
     /// The queue containing items to play.
     var queue: AudioItemQueue?
-
+    
+    /// The header when Stream.
+    open var mediaHeader: [String:String]?
+    
+    
     /// The audio player.
     var player: AVPlayer? {
         didSet {
@@ -106,22 +110,31 @@ public class AudioPlayer: NSObject {
                 
                 //Reset special state flags
                 pausedForInterruption = false
+                let playerItem:AVPlayerItem
                 
                 //Create new AVPlayerItem
-                let playerItem = AVPlayerItem(url: info.url)
+                if let heasder = mediaHeader {
+                    let asset: AVURLAsset = AVURLAsset(url: info.url, options: ["AVURLAssetHTTPHeaderFieldsKey": mediaHeader])
+                    //                    let asset: AVURLAsset = AVURLAsset(URL:info.url, options: ["AVURLAssetHTTPHeaderFieldsKey": mediaHeader])
+                    playerItem = AVPlayerItem(asset: asset)
+                    
+                } else {
+                    playerItem = AVPlayerItem(url: info.url)
+                    
+                }
                 
                 if #available(iOS 10.0, tvOS 10.0, OSX 10.12, *) {
                     playerItem.preferredForwardBufferDuration = self.preferredForwardBufferDuration
                 }
-
+                
                 //Creates new player
                 player = AVPlayer(playerItem: playerItem)
                 
                 currentQuality = info.quality
-
+                
                 //Updates information on the lock screen
                 updateNowPlayingInfoCenter()
-
+                
                 //Calls delegate
                 if oldValue != currentItem {
                     delegate?.audioPlayer(self, willStartPlaying: currentItem)
